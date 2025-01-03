@@ -561,6 +561,39 @@ def mouse_listener(button, state, x, y):
                 print(f"Goodbye! Score: {score}")
                 glutLeaveMainLoop()
 
+def keyboard_listener(key, x, y):  # to create bullet and set shooting direction
+    global pause,tool_flag,player_pos, bullet_r, score
+
+    if pause is False:
+        if key == b't':  # Pressing 't' toggles the tools
+            tool_flag = 1 - tool_flag
+            print("Switched Tool:", "Drill" if tool_flag == 0 else "Hammer")
+
+
+        pos_adjust = player_r + 10
+
+        x0 = player_pos[0] * cell_size + pos_adjust
+        y0 = player_pos[1] * cell_size + pos_adjust
+
+        if tool_flag == 0:
+            if key == b'w' or key == b'W':  # up
+                new_bullet = Bullet([x0, y0 - 20], [0, -10]) #bullet position and updates the velocities
+                bullets.append(new_bullet)
+
+            elif key == b's' or key == b'S':  # down
+                new_bullet = Bullet([x0, y0 + 20], [0, 10])
+                bullets.append(new_bullet)
+
+            elif key == b'a' or key == b'A':  # left
+                new_bullet = Bullet([x0 - 20, y0], [-10, 0])
+                bullets.append(new_bullet)
+
+            elif key == b'd' or key == b'D':  # right
+                new_bullet = Bullet([x0 + 20, y0], [10, 0])
+                bullets.append(new_bullet)
+
+        glutPostRedisplay()
+
 
 def animate():
     global pause
@@ -575,7 +608,7 @@ def animate():
             if check_pos is True:
                 bullets_to_remove.append(bullet)
 
-        for bullet in bullets_to_remove:
+        for bullet in bullets_to_remove: #removes bullet from the screen once it hits the wall
             bullets.remove(bullet)
 
         enemy_collision = check_collisions()
@@ -599,40 +632,6 @@ def animate():
 
 # # # # # # # Scoring System # # # # # # # #
 
-def keyboard_listener(key, x, y):  # to create bullet and set shooting direction
-    global pause,tool_flag,player_pos, bullet_r, score
-
-    if pause is False:
-        if key == b't':  # Press 't' to toggle tools
-            tool_flag = 1 - tool_flag
-            print("Switched Tool:", "Drill" if tool_flag == 0 else "Hammer")
-
-
-        pos_adjust = player_r + 10
-
-        x0 = player_pos[0] * cell_size + pos_adjust
-        y0 = player_pos[1] * cell_size + pos_adjust
-
-        if tool_flag == 0:
-            if key == b'w' or key == b'W':  # up
-                new_bullet = Bullet([x0, y0 - 20], [0, -10])
-                bullets.append(new_bullet)
-
-            elif key == b's' or key == b'S':  # down
-                new_bullet = Bullet([x0, y0 + 20], [0, 10])
-                bullets.append(new_bullet)
-
-            elif key == b'a' or key == b'A':  # left
-                new_bullet = Bullet([x0 - 20, y0], [-10, 0])
-                bullets.append(new_bullet)
-
-            elif key == b'd' or key == b'D':  # right
-                new_bullet = Bullet([x0 + 20, y0], [10, 0])
-                bullets.append(new_bullet)
-
-        glutPostRedisplay()
-
-
 class Bullet:
     def __init__(self, pos, velocity, r=bullet_r):
         self.pos = pos
@@ -643,7 +642,7 @@ class Bullet:
         self.pos[0] += self.velocity[0]  # updating bullet position
         self.pos[1] += self.velocity[1]
 
-        cell_x = int(self.pos[0] / cell_size)  # find cell coordinates based on bullet pos
+        cell_x = int(self.pos[0] / cell_size)  # finding cell coordinates based on bullet pos
         cell_y = int(self.pos[1] / cell_size)
 
         if (0 <= cell_x < maze_width) and (0 <= cell_y < maze_height):  # boundary check
@@ -671,10 +670,8 @@ def check_collisions():
     adjustment = player_r + 10  # Offset to align positions
     player_x = player_pos[0] * cell_size + adjustment
     player_y = player_pos[1] * cell_size + adjustment
-
-    # Check collisions with golds 
     
-    
+    #adjusting gold position with cell coordinates
     for gold in gold_pos:
         gold_x = gold[0] * cell_size + adjustment
         gold_y = gold[1] * cell_size + adjustment
@@ -684,11 +681,11 @@ def check_collisions():
             if abs(player_x - gold_x) <= player_r and abs(player_y - gold_y) <= player_r:
                 golds_to_remove.append(gold)
                 score += 5 
-                gold_score+=5# Award points for collecting gold
+                gold_score+=5  # points for collecting gold
                 print(f"Gold collected! Score: {score}")
 
                 # Ensuring time bonus can be awarded repeatedly if score thresholds are met
-                if score % 30 == 0:
+                if score % 30 == 0: #multiples of 30
                     remaining_time += 10
                     print(f"Time bonus! 10 seconds added. New time: {remaining_time} seconds")
 
@@ -706,8 +703,8 @@ def check_collisions():
         enemy_x = enemy[0] * cell_size + adjustment
         enemy_y = enemy[1] * cell_size + adjustment
 
-        # Distance between player and enemy (for player collision)
-        player_dist = ((player_x - enemy_x) ** 2 + (player_y - enemy_y) ** 2) ** 0.5
+        # Distance between player and enemy 
+        player_dist = ((player_x - enemy_x) ** 2 + (player_y - enemy_y) ** 2) ** 0.5 #euclidean distance formula
         if player_dist <= player_r + enemy_r:
             enemies_to_remove.append(enemy)
             if tool_flag == 1:
@@ -718,23 +715,23 @@ def check_collisions():
         for bullet in bullets:
             bullet_x, bullet_y = bullet.pos
 
-            if abs(bullet_x - enemy_x) <= enemy_r and abs(bullet_y - enemy_y) <= enemy_r:
+            if abs(bullet_x - enemy_x) <= enemy_r and abs(bullet_y - enemy_y) <= enemy_r: #enemy shot
                 enemies_to_remove.append(enemy)
                 bullets_to_remove.append(bullet)
-                score += 10  # Award points for defeating an enemy
+                score += 10  # points for defeating an enemy
                 print(f"Enemy defeated! Score: {score}")
                 if score % 30 == 0:
                     remaining_time += 10
                     print(f"Time bonus! 10 seconds added. New time: {remaining_time} seconds")
 
-    for bullet in bullets_to_remove:
+    for bullet in bullets_to_remove: #clearing hit bullet from bullet list
         if bullet in bullets:
             bullets.remove(bullet)
 
     
     for enemy in enemies_to_remove:
         if tool_flag == 0:
-            # Drill logic
+            # Drill logic (enemy removed on collision)
             if enemy in enemy_pos:
                 enemy_pos.remove(enemy)
                 
@@ -743,7 +740,7 @@ def check_collisions():
                 enemy_pos.remove(enemy)
                 print("Bomb effect triggered!")
 
-                # Bomb effect: Clears nearby bricks and walls
+                # Bomb effect clears nearby bricks and walls
                 enemy_cell_x, enemy_cell_y = enemy
                 affected_cells = [
                     (enemy_cell_x - 1, enemy_cell_y), (enemy_cell_x + 1, enemy_cell_y),
@@ -753,12 +750,10 @@ def check_collisions():
                 ]
 
                 for cell in affected_cells:
-                    print(cell)
-                    print(gold_pos)
-                    for gold in gold_pos:
-                        if list(cell) == gold:
+                    for gold in gold_pos:  #checking with gold_pos list as brick depends on gold position
+                        if list(cell) == gold: #converting from tuple
                             golds_to_remove.append(gold)
-                            gold_pos.remove(gold)
+                            gold_pos.remove(gold) #this will remove the brick as well
                     if 0 <= cell[0] < maze_width and 0 <= cell[1] < maze_height:
                         if cell[0] != 0 and cell[0] != maze_width - 1 and cell[1] != 0 and cell[1] != maze_height - 1 and cell[1] != 2: #protecting outer walls
                             maze[cell[1]][cell[0]] = 0
@@ -797,7 +792,7 @@ def display():
 glutInit()
 glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB)
 glutInitWindowSize(800, 800)
-glutCreateWindow(b"Beat the Maze!")
+glutCreateWindow(b"Treasure Hunt!")
 glClearColor(0, 0, 0, 1)
 glMatrixMode(GL_PROJECTION)
 glLoadIdentity()
